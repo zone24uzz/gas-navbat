@@ -2,15 +2,8 @@
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "cleanUrls": true,
-  "trailingSlash": false,
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 10,
-      "includeFiles": "api/**"
-    }
-  }
+  "trailingSlash": false
 }
