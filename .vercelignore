@@ -8,7 +8,6 @@ client/node_modules
 client/dist
 server.js
 bot.js
-package-lock.json
 
 # Data (stored in Redis, not needed for Vercel)
 data/
