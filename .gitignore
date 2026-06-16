@@ -25,3 +25,6 @@ dist-ssr
 
 .vercel
 .env*.local
+
+# Windows junk
+client/nul
