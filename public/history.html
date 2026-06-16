@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zaправka tarixi — GazQueue</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    body { padding-bottom: 32px; }
+    .page-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+    table { width: 100%; border-collapse: collapse; font-family: inherit; }
+    thead tr { background: var(--surface2); }
+    th { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    td { padding: 11px 14px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr.today { background: rgba(79,110,247,0.03); }
+    .filter-btn { padding: 7px 14px; border-radius: 9px; border: 1.5px solid var(--border); background: var(--surface2); font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+    .filter-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner" style="max-width:900px;margin:0 auto;width:100%;padding:0 16px;display:flex;align-items:center;gap:12px;">
+      <a href="/admin.html" style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;">
+        <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;color:#fff" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <span style="color:#fff;font-weight:800;font-size:17px;flex:1;">Zaправka tarixi</span>
+      <button onclick="clearHistory()" style="color:rgba(255,255,255,0.8);font-size:12px;font-weight:600;background:rgba(255,255,255,0.15);border:none;padding:7px 12px;border-radius:9px;cursor:pointer;">
+        Tozalash
+      </button>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+
+    <!-- Summary cards -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="stat-today" style="font-size:32px;font-weight:800;color:var(--accent);margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Bugun</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="stat-total" style="font-size:32px;font-weight:800;color:var(--accent2);margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Jami</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="stat-amount" style="font-size:20px;font-weight:800;color:#f97316;margin:0 0 4px;line-height:1;">—</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Ko'p so'ralgan</p>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;color:var(--text2);">Filter:</span>
+        <button class="filter-btn active" onclick="setFilter('all', this)">Hammasi</button>
+        <button class="filter-btn" onclick="setFilter('today', this)">Bugun</button>
+        <button class="filter-btn" onclick="setFilter('week', this)">Bu hafta</button>
+        <div style="flex:1;"></div>
+        <input id="search-input" type="text" placeholder="Ism yoki mashina raqami..."
+          oninput="renderTable()"
+          style="border:1.5px solid var(--border);border-radius:9px;padding:7px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text);background:var(--surface2);width:200px;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Ism</th>
+              <th>Mashina</th>
+              <th>Gaz miqdori</th>
+              <th>Seksiya</th>
+              <th>Sana · Vaqt</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+      <div id="empty-state" style="display:none;padding:48px 20px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">📋</div>
+        <p style="font-weight:700;color:var(--text);margin:0 0 6px;">Tarix bo'sh</p>
+        <p style="color:var(--text3);font-size:13px;margin:0;">Zaправkalar tugagandan keyin bu yerda ko'rinadi</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Auth check
+    const token = sessionStorage.getItem('admin_token');
+    if (!token) location.href = '/admin-login.html';
+
+    let currentFilter = 'all';
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable();
+    }
+
+    function getHistory() {
+      return JSON.parse(localStorage.getItem('refuel_history') || '[]');
+    }
+
+    function isToday(iso) {
+      return new Date(iso).toDateString() === new Date().toDateString();
+    }
+
+    function isThisWeek(iso) {
+      const d = new Date(iso);
+      const now = new Date();
+      const weekAgo = new Date(now - 7 * 86400000);
+      return d >= weekAgo;
+    }
+
+    function renderStats(history) {
+      const today = history.filter(r => isToday(r.time)).length;
+      document.getElementById('stat-today').textContent = today;
+      document.getElementById('stat-total').textContent = history.length;
+
+      // Most requested gas amount
+      if (history.length) {
+        const counts = {};
+        history.forEach(r => { counts[r.gasAmount] = (counts[r.gasAmount] || 0) + 1; });
+        const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        document.getElementById('stat-amount').textContent = top ? top[0].split('(')[0].trim() : '—';
+      }
+    }
+
+    function renderTable() {
+      const all = getHistory();
+      renderStats(all);
+
+      const search = document.getElementById('search-input').value.toLowerCase();
+
+      let filtered = all.filter(r => {
+        if (currentFilter === 'today' && !isToday(r.time)) return false;
+        if (currentFilter === 'week'  && !isThisWeek(r.time)) return false;
+        if (search && !r.name.toLowerCase().includes(search) && !r.carNumber.toLowerCase().includes(search)) return false;
+        return true;
+      });
+
+      const tbody = document.getElementById('history-tbody');
+      const empty = document.getElementById('empty-state');
+
+      if (!filtered.length) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      tbody.innerHTML = filtered.map((r, i) => {
+        const t = new Date(r.time);
+        const today = isToday(r.time);
+        const dateStr = today ? 'Bugun' : t.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        const timeStr = t.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <tr class="${today ? 'today' : ''}">
+            <td style="color:var(--text3);font-weight:500;">${filtered.length - i}</td>
+            <td style="font-weight:600;color:var(--text);">${r.name}</td>
+            <td style="font-weight:700;color:var(--text2);">🚗 ${r.carNumber}</td>
+            <td style="color:#f97316;font-weight:600;">⛽ ${r.gasAmount}</td>
+            <td style="color:var(--text3);">${r.section || '—'}</td>
+            <td>
+              <span style="color:${today ? 'var(--accent)' : 'var(--text3)'};font-weight:${today ? '700' : '400'};">${dateStr}</span>
+              <span style="color:var(--text3);"> · ${timeStr}</span>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+
+    function clearHistory() {
+      if (!confirm('Barcha tarixni o\'chirishni tasdiqlaysizmi?')) return;
+      localStorage.removeItem('refuel_history');
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

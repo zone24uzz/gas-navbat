@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — GazQueue</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    body { padding-bottom: 32px; }
+    .page-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+    .section-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-card.occupied {
+      background: rgba(34,197,94,0.07);
+      border-color: rgba(34,197,94,0.35);
+    }
+    .section-badge {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--grad);
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-badge.empty {
+      background: var(--surface2);
+      color: var(--text3);
+      border: 1.5px solid var(--border);
+    }
+    .assign-btn {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface2);
+      color: var(--text2);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .assign-btn:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner" style="max-width:900px;margin:0 auto;width:100%;padding:0 16px;display:flex;align-items:center;justify-content:space-between;">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+        <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;color:#fff" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h2l1 2h13l1-2h2M5 10V6a1 1 0 011-1h3m4 0h3a1 1 0 011 1v4M9 5V3m6 2V3"/>
+          </svg>
+        </div>
+        <span style="color:#fff;font-weight:800;font-size:18px;">GazQueue</span>
+      </a>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;letter-spacing:0.5px;">ADMIN</span>
+        <button id="btn-logout" style="color:rgba(255,255,255,0.85);font-size:12px;font-weight:600;background:rgba(255,255,255,0.15);border:none;padding:7px 12px;border-radius:9px;cursor:pointer;">Chiqish</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-count" style="font-size:36px;font-weight:800;color:var(--accent);margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Navbatda</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-served" style="font-size:36px;font-weight:800;color:var(--accent2);margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Xizmat ko'rsatildi</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-sections-busy" style="font-size:36px;font-weight:800;color:#f97316;margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Band seksiyalar</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-today" style="font-size:36px;font-weight:800;color:#8b5cf6;margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Bugun zaправka</p>
+      </div>
+    </div>
+
+    <!-- Gas status control -->
+    <div class="card" style="padding:20px;">
+      <p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 14px;">⛽ Gaz holati (mijozlarga ko'rinadi)</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button id="gas-btn-yes" onclick="setGasAvailable(true)"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.15s;">
+          ✅ Gaz bor
+        </button>
+        <button id="gas-btn-no" onclick="setGasAvailable(false)"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.15s;">
+          ❌ Gaz yo'q
+        </button>
+      </div>
+      <input id="gas-message" type="text" placeholder="Qo'shimcha xabar (ixtiyoriy)..."
+        style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px;color:var(--text);background:var(--surface2);"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <input id="gas-eta" type="text" placeholder="Kelish vaqti, masalan: 2 soatdan keyin (faqat yo'q bo'lsa)..."
+        style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px;color:var(--text);background:var(--surface2);"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <button onclick="saveGasStatus()"
+        class="btn-primary" style="width:100%;padding:12px;font-size:14px;border-radius:10px;">
+        Saqlash
+      </button>
+      <p id="gas-saved-msg" style="display:none;text-align:center;font-size:12px;color:var(--accent2);margin:8px 0 0;font-weight:600;">✓ Saqlandi</p>
+    </div>
+
+    <!-- Sections -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Seksiyalar</p>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:var(--text3);">Seksiya soni:</span>
+          <select id="section-count" style="border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-size:13px;font-weight:600;color:var(--text);background:var(--surface2);outline:none;cursor:pointer;">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+      </div>
+      <div id="sections-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>
+    </div>
+
+    <!-- Queue list -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Navbat ro'yxati</p>
+        <div style="display:flex;gap:8px;">
+          <span id="queue-count-badge" style="font-size:12px;font-weight:700;background:var(--accent-bg);color:var(--accent);padding:4px 10px;border-radius:20px;">0 kishi</span>
+          <button id="btn-clear" class="btn-danger" style="padding:6px 12px;font-size:12px;border-radius:8px;">
+            Tozalash
+          </button>
+        </div>
+      </div>
+      <div id="admin-queue-list" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0;">Navbat bo'sh</p>
+      </div>
+    </div>
+
+    <!-- Refueling history -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Zaправka tarixi</p>
+          <p style="font-size:12px;color:var(--text3);margin:4px 0 0;">Brauzerda saqlanadi (localStorage)</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a href="/history.html" style="font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent-bg);color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:5px;">
+            <svg xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            To'liq tarix
+          </a>
+          <button onclick="clearHistory()"
+            style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);color:#ef4444;cursor:pointer;">
+            Tozalash
+          </button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
+        <table style="width:100%;border-collapse:collapse;font-family:inherit;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">#</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Ism</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Mashina</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Gaz miqdori</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Vaqt</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">Hali zaправkalar yo'q</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Mijozlar baholari</p>
+        <span id="reviews-avg" style="font-size:12px;font-weight:700;background:rgba(251,191,36,0.15);color:#d97706;padding:4px 10px;border-radius:20px;"></span>
+      </div>
+      <div id="reviews-list" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0;">Hali baholashlar yo'q</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

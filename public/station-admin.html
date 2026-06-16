@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AZS Admin — GazQueue</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    body { padding-bottom: 32px; }
+    .page-wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+    .section-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; display:flex; align-items:center; gap:12px; }
+    .section-card.occupied { background:rgba(34,197,94,0.07); border-color:rgba(34,197,94,0.35); }
+    .section-badge { width:40px; height:40px; border-radius:10px; background:var(--grad); color:#fff; font-weight:800; font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .section-badge.empty { background:var(--surface2); color:var(--text3); border:1.5px solid var(--border); }
+    .assign-btn { font-size:11px; font-weight:700; padding:5px 10px; border-radius:8px; border:1.5px solid var(--border); background:var(--surface2); color:var(--text2); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .assign-btn:hover { background:var(--accent-bg); border-color:var(--accent); color:var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner" style="max-width:900px;margin:0 auto;width:100%;padding:0 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:18px;">⛽</span>
+        </div>
+        <div>
+          <p style="color:#fff;font-weight:800;font-size:15px;margin:0;line-height:1.2;" id="header-station-name">AZS Admin</p>
+          <p style="color:rgba(255,255,255,0.65);font-size:11px;margin:0;">Admin panel</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="background:rgba(255,255,255,0.2);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;">AZS ADMIN</span>
+        <button id="btn-logout" style="color:rgba(255,255,255,0.85);font-size:12px;font-weight:600;background:rgba(255,255,255,0.15);border:none;padding:7px 12px;border-radius:9px;cursor:pointer;">Chiqish</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="page-wrap">
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-count" style="font-size:36px;font-weight:800;color:var(--accent);margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Navbatda</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-served" style="font-size:36px;font-weight:800;color:var(--accent2);margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Xizmat ko'rsatildi</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-sections-busy" style="font-size:36px;font-weight:800;color:#f97316;margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Band seksiyalar</p>
+      </div>
+      <div class="card" style="padding:18px;text-align:center;">
+        <p id="admin-today" style="font-size:36px;font-weight:800;color:#8b5cf6;margin:0 0 4px;line-height:1;">0</p>
+        <p style="color:var(--text3);font-size:12px;font-weight:600;margin:0;">Bugun zaправka</p>
+      </div>
+    </div>
+
+    <!-- Gas status -->
+    <div class="card" style="padding:20px;">
+      <p style="font-size:14px;font-weight:700;color:var(--text);margin:0 0 14px;">⛽ Gaz holati (mijozlarga ko'rinadi)</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button id="gas-btn-yes" onclick="setGasAvailable(true)"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.15s;">✅ Gaz bor</button>
+        <button id="gas-btn-no" onclick="setGasAvailable(false)"
+          style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);font-weight:700;font-size:13px;cursor:pointer;transition:all 0.15s;">❌ Gaz yo'q</button>
+      </div>
+      <input id="gas-message" type="text" placeholder="Qo'shimcha xabar (ixtiyoriy)..."
+        style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px;color:var(--text);background:var(--surface2);"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <input id="gas-eta" type="text" placeholder="Kelish vaqti (faqat yo'q bo'lsa)..."
+        style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:12px;color:var(--text);background:var(--surface2);"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <button onclick="saveGasStatus()" class="btn-primary" style="width:100%;padding:12px;font-size:14px;border-radius:10px;">Saqlash</button>
+      <p id="gas-saved-msg" style="display:none;text-align:center;font-size:12px;color:var(--accent2);margin:8px 0 0;font-weight:600;">✓ Saqlandi</p>
+    </div>
+
+    <!-- Sections -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Seksiyalar</p>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:var(--text3);">Seksiya soni:</span>
+          <select id="section-count" style="border:1.5px solid var(--border);border-radius:8px;padding:4px 8px;font-size:13px;font-weight:600;color:var(--text);background:var(--surface2);outline:none;cursor:pointer;">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+      </div>
+      <div id="sections-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>
+    </div>
+
+    <!-- Queue list -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Navbat ro'yxati</p>
+        <div style="display:flex;gap:8px;">
+          <span id="queue-count-badge" style="font-size:12px;font-weight:700;background:var(--accent-bg);color:var(--accent);padding:4px 10px;border-radius:20px;">0 kishi</span>
+          <button id="btn-clear" class="btn-danger" style="padding:6px 12px;font-size:12px;border-radius:8px;">Tozalash</button>
+        </div>
+      </div>
+      <div id="admin-queue-list" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0;">Navbat bo'sh</p>
+      </div>
+    </div>
+
+    <!-- Refueling history -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Zaправka tarixi</p>
+          <p style="font-size:12px;color:var(--text3);margin:4px 0 0;">Brauzerda saqlanadi</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a href="/history.html" style="font-size:12px;font-weight:700;padding:7px 14px;border-radius:8px;border:1.5px solid var(--accent);background:var(--accent-bg);color:var(--accent);text-decoration:none;">To'liq tarix</a>
+          <button onclick="clearHistory()" style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.06);color:#ef4444;cursor:pointer;">Tozalash</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--border);">
+        <table style="width:100%;border-collapse:collapse;font-family:inherit;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;">#</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;">Ism</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;">Mashina</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;">Gaz</th>
+              <th style="padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;">Vaqt</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">Hali zaправkalar yo'q</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="card" style="padding:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <p style="font-size:14px;font-weight:700;color:var(--text);margin:0;">Mijozlar baholari</p>
+        <span id="reviews-avg" style="font-size:12px;font-weight:700;background:rgba(251,191,36,0.15);color:#d97706;padding:4px 10px;border-radius:20px;"></span>
+      </div>
+      <div id="reviews-list" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0;">Hali baholashlar yo'q</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const token = sessionStorage.getItem('station_token');
+    const stationId = sessionStorage.getItem('station_id');
+    const stationName = sessionStorage.getItem('station_name');
+    if (!token || !stationId) location.href = '/station-login.html';
+
+    document.getElementById('header-station-name').textContent = stationName || 'AZS Admin';
+
+    const stHeaders = { 'Content-Type': 'application/json', 'x-station-token': token };
+
+    let servedCount = 0;
+    let currentQueue = [];
+    let currentSections = {};
+    let gasAvailable = true;
+
+    function getSectionCount() {
+      return parseInt(document.getElementById('section-count').value, 10);
+    }
+
+    // ── Sections ──────────────────────────────────────────
+    function renderSections() {
+      const count = getSectionCount();
+      const grid = document.getElementById('sections-grid');
+      let busy = 0;
+      grid.innerHTML = '';
+      for (let i = 1; i <= count; i++) {
+        const key = `Sektsiya ${i}`;
+        const user = currentSections[key];
+        if (user) busy++;
+        const card = document.createElement('div');
+        card.className = 'section-card' + (user ? ' occupied' : '');
+        card.innerHTML = `
+          <div class="section-badge ${user ? '' : 'empty'}">${i}</div>
+          <div style="flex:1;min-width:0;">
+            <p style="margin:0;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;">Sektsiya ${i}</p>
+            ${user
+              ? `<p style="margin:2px 0 0;font-weight:700;font-size:14px;color:var(--text);">${user.name}</p>
+                 <p style="margin:1px 0 0;font-size:12px;color:var(--text3);">🚗 ${user.carNumber || '—'}</p>`
+              : `<p style="margin:2px 0 0;font-size:13px;color:var(--text3);">Bo'sh</p>`}
+          </div>
+          ${user ? `<button onclick="clearSection('${key}')" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);color:#ef4444;cursor:pointer;">✓ Tayyor</button>` : ''}`;
+        grid.appendChild(card);
+      }
+      document.getElementById('admin-sections-busy').textContent = busy;
+    }
+
+    async function clearSection(key) {
+      const user = currentSections[key];
+      await fetch('/api/station/admin/sections', { method: 'POST', headers: stHeaders, body: JSON.stringify({ section: key }) });
+      if (user) {
+        const history = JSON.parse(localStorage.getItem('refuel_history') || '[]');
+        history.unshift({ name: user.name, carNumber: user.carNumber || '—', gasAmount: user.gasAmount || '—', section: key, stationName, time: new Date().toISOString() });
+        if (history.length > 500) history.splice(500);
+        localStorage.setItem('refuel_history', JSON.stringify(history));
+        updateHistoryUI();
+      }
+      delete currentSections[key];
+      renderSections();
+    }
+
+    async function assignToSection(userId, section) {
+      const res = await fetch('/api/station/admin/assign', { method: 'POST', headers: stHeaders, body: JSON.stringify({ userId, section }) });
+      if (res.ok) {
+        servedCount++;
+        document.getElementById('admin-served').textContent = servedCount;
+        await loadQueue();
+        await loadSections();
+      }
+    }
+
+    async function loadSections() {
+      try {
+        currentSections = await fetch('/api/station/admin/sections', { headers: stHeaders }).then(r => r.json());
+        renderSections();
+      } catch(e) { console.warn(e); }
+    }
+
+    // ── Queue ─────────────────────────────────────────────
+    async function loadQueue() {
+      try {
+        currentQueue = await fetch(`/api/station/queue?stationId=${stationId}`).then(r => r.json());
+        document.getElementById('admin-count').textContent = currentQueue.length;
+        document.getElementById('queue-count-badge').textContent = `${currentQueue.length} kishi`;
+        const list = document.getElementById('admin-queue-list');
+        if (!currentQueue.length) {
+          list.innerHTML = '<p style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0;">Navbat bo\'sh</p>';
+          return;
+        }
+        const sectionCount = getSectionCount();
+        list.innerHTML = currentQueue.map((u, i) => {
+          let btns = '';
+          for (let s = 1; s <= sectionCount; s++) {
+            const key = `Sektsiya ${s}`;
+            const occupied = !!currentSections[key];
+            btns += `<button class="assign-btn" ${occupied ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''} onclick="assignToSection('${u.id}','${key}')">${occupied ? `S${s} ✗` : `→ S${s}`}</button>`;
+          }
+          return `
+            <div class="queue-item ${i===0?'first':''}" style="flex-wrap:wrap;gap:8px;">
+              <span style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;
+                background:${i===0?'var(--accent2)':'var(--surface)'};color:${i===0?'#fff':'var(--text2)'};
+                border:1.5px solid ${i===0?'transparent':'var(--border)'};">${i+1}</span>
+              <div style="flex:1;min-width:120px;">
+                <p style="margin:0;font-weight:600;font-size:14px;color:var(--text);">${u.name}</p>
+                <p style="margin:2px 0 0;font-size:12px;color:var(--text3);">🚗 ${u.carNumber||'—'} · ${new Date(u.joinedAt).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}${u.gasAmount?` · ⛽ ${u.gasAmount}`:''}</p>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">${btns}</div>
+            </div>`;
+        }).join('');
+      } catch(e) { console.warn(e); }
+    }
+
+    // ── Gas status ────────────────────────────────────────
+    function setGasAvailable(val) {
+      gasAvailable = val;
+      const yes = document.getElementById('gas-btn-yes');
+      const no  = document.getElementById('gas-btn-no');
+      if (val) {
+        yes.style.cssText += ';background:rgba(34,197,94,0.12);border-color:#22c55e;color:#15803d;';
+        no.style.cssText  += ';background:var(--surface2);border-color:var(--border);color:var(--text);';
+      } else {
+        no.style.cssText  += ';background:rgba(239,68,68,0.08);border-color:#ef4444;color:#dc2626;';
+        yes.style.cssText += ';background:var(--surface2);border-color:var(--border);color:var(--text);';
+      }
+    }
+
+    async function saveGasStatus() {
+      const message = document.getElementById('gas-message').value.trim();
+      const eta     = document.getElementById('gas-eta').value.trim();
+      await fetch('/api/station/admin/gas-status', { method: 'POST', headers: stHeaders, body: JSON.stringify({ available: gasAvailable, message, eta }) });
+      const msg = document.getElementById('gas-saved-msg');
+      msg.style.display = 'block';
+      setTimeout(() => msg.style.display = 'none', 2000);
+    }
+
+    async function loadGasStatus() {
+      try {
+        const s = await fetch(`/api/station/gas-status?stationId=${stationId}`).then(r => r.json());
+        gasAvailable = s.available;
+        setGasAvailable(s.available);
+        document.getElementById('gas-message').value = s.message || '';
+        document.getElementById('gas-eta').value = s.eta || '';
+      } catch {}
+    }
+
+    // ── Reviews ───────────────────────────────────────────
+    async function loadReviews() {
+      try {
+        const reviews = await fetch('/api/station/admin/reviews', { headers: stHeaders }).then(r => r.json());
+        const list = document.getElementById('reviews-list');
+        const avgEl = document.getElementById('reviews-avg');
+        if (!reviews.length) {
+          list.innerHTML = '<p style="text-align:center;color:var(--text3);font-size:14px;padding:16px 0;">Hali baholashlar yo\'q</p>';
+          avgEl.textContent = '';
+          return;
+        }
+        const avg = (reviews.reduce((s,r) => s+r.stars, 0) / reviews.length).toFixed(1);
+        avgEl.textContent = `⭐ ${avg} o'rtacha (${reviews.length} ta)`;
+        list.innerHTML = [...reviews].reverse().map(r => `
+          <div class="queue-item">
+            <div style="font-size:22px;flex-shrink:0;">${'⭐'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</div>
+            <div style="flex:1;min-width:0;">
+              ${r.comment ? `<p style="margin:0;font-size:13px;color:var(--text);">"${r.comment}"</p>` : ''}
+              <p style="margin:${r.comment?'3px':'0'} 0 0;font-size:11px;color:var(--text3);">${r.section||''} · ${new Date(r.time).toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}</p>
+            </div>
+          </div>`).join('');
+      } catch(e) { console.warn(e); }
+    }
+
+    // ── History ───────────────────────────────────────────
+    function updateHistoryUI() {
+      const history = JSON.parse(localStorage.getItem('refuel_history') || '[]')
+        .filter(r => r.stationName === stationName);
+      const today = history.filter(r => new Date(r.time).toDateString() === new Date().toDateString());
+      const el = document.getElementById('admin-today');
+      if (el) el.textContent = today.length;
+      const tbody = document.getElementById('history-tbody');
+      if (!tbody) return;
+      if (!history.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px;font-size:13px;">Hali zaправkalar yo'q</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = history.map((r, i) => {
+        const t = new Date(r.time);
+        const isToday = t.toDateString() === new Date().toDateString();
+        return `<tr style="border-bottom:1px solid var(--border);${isToday?'background:rgba(79,110,247,0.03);':''}">
+          <td style="padding:10px 12px;font-size:13px;color:var(--text3);">${history.length-i}</td>
+          <td style="padding:10px 12px;font-size:13px;font-weight:600;color:var(--text);">${r.name}</td>
+          <td style="padding:10px 12px;font-size:13px;font-weight:700;color:var(--text2);">🚗 ${r.carNumber}</td>
+          <td style="padding:10px 12px;font-size:12px;color:#f97316;font-weight:600;">⛽ ${r.gasAmount}</td>
+          <td style="padding:10px 12px;font-size:12px;color:var(--text3);">
+            ${isToday?`<span style="color:var(--accent);font-weight:700;">Bugun</span> `:t.toLocaleDateString('uz-UZ',{day:'2-digit',month:'2-digit'})+' '}
+            ${t.toLocaleTimeString('uz-UZ',{hour:'2-digit',minute:'2-digit'})}
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function clearHistory() {
+      if (!confirm("Barcha tarixni o'chirishni tasdiqlaysizmi?")) return;
+      const all = JSON.parse(localStorage.getItem('refuel_history') || '[]');
+      localStorage.setItem('refuel_history', JSON.stringify(all.filter(r => r.stationName !== stationName)));
+      updateHistoryUI();
+    }
+
+    // ── Controls ──────────────────────────────────────────
+    document.getElementById('btn-clear').addEventListener('click', async () => {
+      if (!confirm('Navbatni tozalashni tasdiqlaysizmi?')) return;
+      await fetch('/api/station/admin/clear', { method: 'POST', headers: stHeaders });
+      await loadQueue();
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      sessionStorage.removeItem('station_token');
+      sessionStorage.removeItem('station_id');
+      sessionStorage.removeItem('station_name');
+      location.href = '/station-login.html';
+    });
+
+    document.getElementById('section-count').addEventListener('change', () => { renderSections(); loadQueue(); });
+
+    // ── Init ──────────────────────────────────────────────
+    loadQueue();
+    loadSections();
+    loadReviews();
+    loadGasStatus();
+    updateHistoryUI();
+    setInterval(() => { loadQueue(); loadSections(); loadReviews(); }, 3000);
+  </script>
+</body>
+</html>

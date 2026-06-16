@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin kirish — GazQueue</title>
+  <link rel="stylesheet" href="/css/theme.css">
+  <style>
+    body { min-height: 100vh; display: flex; flex-direction: column; }
+    .center { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-inner" style="max-width:640px;margin:0 auto;width:100%;padding:0 16px;display:flex;align-items:center;justify-content:space-between;">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+        <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;color:#fff" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h2l1 2h13l1-2h2M5 10V6a1 1 0 011-1h3m4 0h3a1 1 0 011 1v4M9 5V3m6 2V3"/>
+          </svg>
+        </div>
+        <span style="color:#fff;font-weight:800;font-size:18px;">GazQueue</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="center">
+    <div style="width:100%;max-width:380px;">
+
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:68px;height:68px;background:var(--grad);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 8px 24px rgba(79,110,247,0.3);">
+          <svg xmlns="http://www.w3.org/2000/svg" style="width:32px;height:32px;color:#fff" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h1 style="font-size:22px;font-weight:800;color:var(--text);margin:0 0 6px;">Kirish</h1>
+        <p style="color:var(--text3);font-size:13px;margin:0;">Admin yoki AZS xodimi uchun</p>
+      </div>
+
+      <div class="card" style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;">Telefon raqam</label>
+          <div style="display:flex;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;transition:border-color 0.2s;" onfocusin="this.style.borderColor='var(--accent)'" onfocusout="this.style.borderColor='var(--border)'">
+            <div style="background:var(--surface2);border-right:1.5px solid var(--border);padding:0 14px;display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--text2);white-space:nowrap;">🇺🇿 +998</div>
+            <input type="tel" id="admin-phone" placeholder="90 999 55 26" maxlength="12"
+              style="flex:1;padding:13px 14px;font-size:14px;background:var(--surface);color:var(--text);border:none;outline:none;font-family:inherit;" />
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;">Parol</label>
+          <div style="position:relative;">
+            <input type="password" id="admin-password" placeholder="••••••••" class="input"
+              style="padding-right:48px;" />
+            <button type="button" onclick="togglePass()" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;">
+              <svg xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error" style="display:none;background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.2);color:#ef4444;font-size:13px;border-radius:var(--radius-sm);padding:12px 14px;">
+          ❌ Telefon yoki parol noto'g'ri
+        </div>
+
+        <button id="login-btn" onclick="adminLogin()" class="btn-primary" style="width:100%;padding:15px;font-size:15px;border-radius:var(--radius-sm);">
+          Kirish
+        </button>
+      </div>
+
+      <p style="text-align:center;margin-top:16px;">
+        <a href="/" style="color:var(--text3);font-size:13px;text-decoration:none;">← Bosh sahifaga qaytish</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    if (sessionStorage.getItem('admin_token')) location.href = '/admin.html';
+    if (sessionStorage.getItem('station_token')) location.href = '/station-admin.html';
+
+    function togglePass() {
+      const inp = document.getElementById('admin-password');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    async function adminLogin() {
+      const phoneRaw = document.getElementById('admin-phone').value.replace(/\s/g, '');
+      const password = document.getElementById('admin-password').value;
+      const phone = '+998' + phoneRaw;
+      const btn = document.getElementById('login-btn');
+      const err = document.getElementById('login-error');
+
+      err.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Tekshirilmoqda...';
+
+      try {
+        // Try station login first
+        const stRes = await fetch('/api/auth/station-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        });
+        if (stRes.ok) {
+          const data = await stRes.json();
+          sessionStorage.setItem('station_token', data.token);
+          sessionStorage.setItem('station_id', data.stationId);
+          sessionStorage.setItem('station_name', data.stationName);
+          location.href = '/station-admin.html';
+          return;
+        }
+
+        // Try super admin login
+        const res = await fetch('/api/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { err.style.display = 'block'; return; }
+        sessionStorage.setItem('admin_token', data.token);
+        location.href = '/admin.html';
+      } catch {
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kirish';
+      }
+    }
+
+    document.getElementById('admin-password').addEventListener('keydown', e => {
+      if (e.key === 'Enter') adminLogin();
+    });
+  </script>
+</body>
+</html>
